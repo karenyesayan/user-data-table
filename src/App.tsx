@@ -1,96 +1,115 @@
-import { Table } from "antd";
+import { useState, useEffect } from "react";
+import { Table, Input, Space } from "antd";
 import type { TableColumnsType, TableProps } from "antd";
+import type { GetProps } from "antd";
 import "./App.css";
 
 interface DataType {
-  key: React.Key;
-  name: string;
+  id: React.Key;
+  firstName: string;
+  lastName: string;
+  maidenName: string;
   age: number;
-  address: string;
+  gender: string;
+  email: string;
+  phone: string;
+  username: string;
+  password: string;
+  birthDate: string;
+  image: string;
+  bloodGroup: string;
+  height: number;
+  weight: number;
+  eyeColor: string;
+  hair: {
+    color: string;
+    type: string;
+  };
+  ip: string;
+  address: {
+    address: string;
+    city: string;
+    state: string;
+    stateCode: string;
+    postalCode: string;
+    coordinates: {
+      lat: number;
+      lng: number;
+    };
+    country: string;
+  };
+  macAddress: string;
+  university: string;
+  bank: {
+    cardExpire: string;
+    cardNumber: string;
+    cardType: string;
+    currency: string;
+    iban: string;
+  };
+  company: {
+    department: string;
+    name: string;
+    title: string;
+    address: {
+      address: string;
+      city: string;
+      state: string;
+      stateCode: string;
+      postalCode: string;
+      coordinates: {
+        lat: number;
+        lng: number;
+      };
+      country: string;
+    };
+  };
+  ein: string;
+  ssn: string;
+  userAgent: string;
+  crypto: {
+    coin: string;
+    wallet: string;
+    network: string;
+  };
+  role: string;
 }
+
+type SearchProps = GetProps<typeof Input.Search>;
+
+const { Search } = Input;
 
 const columns: TableColumnsType<DataType> = [
   {
-    title: "Name",
-    dataIndex: "name",
+    title: "FirstName",
+    dataIndex: "firstName",
     showSorterTooltip: { target: "full-header" },
+    // sortDirections: ["descend"],
+    // defaultSortOrder: "descend",
+    sorter: (a, b) => a.firstName.localeCompare(b.firstName),
+  },
+  {
+    title: "Email",
+    dataIndex: "email",
+  },
+  {
+    title: "Role",
+    dataIndex: "role",
     filters: [
       {
-        text: "Joe",
-        value: "Joe",
+        text: "admin",
+        value: "admin",
       },
       {
-        text: "Jim",
-        value: "Jim",
+        text: "moderator",
+        value: "moderator",
       },
       {
-        text: "Submenu",
-        value: "Submenu",
-        children: [
-          {
-            text: "Green",
-            value: "Green",
-          },
-          {
-            text: "Black",
-            value: "Black",
-          },
-        ],
+        text: "user",
+        value: "user",
       },
     ],
-    // specify the condition of filtering result
-    // here is that finding the name started with `value`
-    onFilter: (value, record) => record.name.indexOf(value as string) === 0,
-    sorter: (a, b) => a.name.length - b.name.length,
-    sortDirections: ["descend"],
-  },
-  {
-    title: "Age",
-    dataIndex: "age",
-    defaultSortOrder: "descend",
-    sorter: (a, b) => a.age - b.age,
-  },
-  {
-    title: "Address",
-    dataIndex: "address",
-    filters: [
-      {
-        text: "London",
-        value: "London",
-      },
-      {
-        text: "New York",
-        value: "New York",
-      },
-    ],
-    onFilter: (value, record) => record.address.indexOf(value as string) === 0,
-  },
-];
-
-const data = [
-  {
-    key: "1",
-    name: "John Brown",
-    age: 32,
-    address: "New York No. 1 Lake Park",
-  },
-  {
-    key: "2",
-    name: "Jim Green",
-    age: 42,
-    address: "London No. 1 Lake Park",
-  },
-  {
-    key: "3",
-    name: "Joe Black",
-    age: 32,
-    address: "Sydney No. 1 Lake Park",
-  },
-  {
-    key: "4",
-    name: "Jim Red",
-    age: 32,
-    address: "London No. 2 Lake Park",
+    onFilter: (value, record) => record.role.indexOf(value as string) === 0,
   },
 ];
 
@@ -104,10 +123,52 @@ const onChange: TableProps<DataType>["onChange"] = (
 };
 
 export default function App() {
+  const [query, setQuery] = useState("");
+  const [data, setData] = useState([]);
+
+  const onSearch: SearchProps["onSearch"] = (value, _e, info) => {
+    // console.log(info?.source, value);
+    setQuery(value);
+  };
+
+  useEffect(() => {
+    let url = "https://dummyjson.com/users";
+
+    if (query) {
+      url = url + `/search?q=${query}`;
+    }
+
+    fetch(url)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((json) => setData(json.users))
+      .catch((error) => console.log("Error:", error));
+  }, [query]);
+
   return (
     <>
+      <Space direction="vertical">
+        <Search
+          placeholder="input search text"
+          allowClear
+          enterButton="Search"
+          size="large"
+          onSearch={onSearch}
+        />
+      </Space>
       <Table<DataType>
+        rowKey={(record) => record.id}
         columns={columns}
+        expandable={{
+          expandedRowRender: (record) => (
+            <p style={{ margin: 0 }}>{record.phone}</p>
+          ),
+          rowExpandable: (record) => record.firstName !== "Not Expandable",
+        }}
         dataSource={data}
         onChange={onChange}
         showSorterTooltip={{ target: "sorter-icon" }}
