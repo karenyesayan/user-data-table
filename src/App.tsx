@@ -84,8 +84,7 @@ const columns: TableColumnsType<DataType> = [
     title: "FirstName",
     dataIndex: "firstName",
     showSorterTooltip: { target: "full-header" },
-    // sortDirections: ["descend"],
-    // defaultSortOrder: "descend",
+    defaultSortOrder: undefined,
     sorter: (a, b) => a.firstName.localeCompare(b.firstName),
   },
   {
@@ -109,6 +108,9 @@ const columns: TableColumnsType<DataType> = [
         value: "user",
       },
     ],
+    defaultFilteredValue: JSON.parse(
+      localStorage.getItem("default-filters") || "[]"
+    ),
     onFilter: (value, record) => record.role.indexOf(value as string) === 0,
   },
 ];
@@ -120,6 +122,21 @@ const onChange: TableProps<DataType>["onChange"] = (
   extra
 ) => {
   console.log("params", pagination, filters, sorter, extra);
+
+  switch (extra.action) {
+    case "paginate": {
+      return localStorage.setItem(
+        "current-page",
+        JSON.stringify(pagination.current)
+      );
+    }
+    case "filter": {
+      return localStorage.setItem(
+        "default-filters",
+        JSON.stringify(filters.role || [])
+      );
+    }
+  }
 };
 
 export default function App() {
@@ -168,6 +185,13 @@ export default function App() {
             <p style={{ margin: 0 }}>{record.phone}</p>
           ),
           rowExpandable: (record) => record.firstName !== "Not Expandable",
+        }}
+        pagination={{
+          // pageSize: 10,
+          defaultCurrent: JSON.parse(
+            localStorage.getItem("current-page") || "1"
+          ),
+          showLessItems: true,
         }}
         dataSource={data}
         onChange={onChange}
