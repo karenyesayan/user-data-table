@@ -52,7 +52,6 @@ const columns: TableColumnsType<DataType> = [
       localStorage.getItem("default-filters") || "[]"
     ),
     onFilter: (value, record) => record.role.indexOf(value as string) === 0,
-    responsive: ["sm"],
   },
 ];
 
