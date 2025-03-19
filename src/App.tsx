@@ -1,79 +1,9 @@
 import { useState, useEffect } from "react";
 import { Table, Input, Space } from "antd";
-import type { TableColumnsType, TableProps } from "antd";
-import type { GetProps } from "antd";
+import { fetchUsers } from "./lib/data";
+import type { TableColumnsType, TableProps, GetProps } from "antd";
+import type { DataType } from "./lib/definitions";
 import "./App.css";
-
-interface DataType {
-  id: React.Key;
-  firstName: string;
-  lastName: string;
-  maidenName: string;
-  age: number;
-  gender: string;
-  email: string;
-  phone: string;
-  username: string;
-  password: string;
-  birthDate: string;
-  image: string;
-  bloodGroup: string;
-  height: number;
-  weight: number;
-  eyeColor: string;
-  hair: {
-    color: string;
-    type: string;
-  };
-  ip: string;
-  address: {
-    address: string;
-    city: string;
-    state: string;
-    stateCode: string;
-    postalCode: string;
-    coordinates: {
-      lat: number;
-      lng: number;
-    };
-    country: string;
-  };
-  macAddress: string;
-  university: string;
-  bank: {
-    cardExpire: string;
-    cardNumber: string;
-    cardType: string;
-    currency: string;
-    iban: string;
-  };
-  company: {
-    department: string;
-    name: string;
-    title: string;
-    address: {
-      address: string;
-      city: string;
-      state: string;
-      stateCode: string;
-      postalCode: string;
-      coordinates: {
-        lat: number;
-        lng: number;
-      };
-      country: string;
-    };
-  };
-  ein: string;
-  ssn: string;
-  userAgent: string;
-  crypto: {
-    coin: string;
-    wallet: string;
-    network: string;
-  };
-  role: string;
-}
 
 type SearchProps = GetProps<typeof Input.Search>;
 
@@ -86,10 +16,20 @@ const columns: TableColumnsType<DataType> = [
     showSorterTooltip: { target: "full-header" },
     defaultSortOrder: undefined,
     sorter: (a, b) => a.firstName.localeCompare(b.firstName),
+    responsive: ["xs"],
+  },
+  {
+    title: "FirstName",
+    dataIndex: "firstName",
+    showSorterTooltip: { target: "full-header" },
+    defaultSortOrder: undefined,
+    sorter: (a, b) => a.firstName.localeCompare(b.firstName),
+    responsive: ["sm"],
   },
   {
     title: "Email",
     dataIndex: "email",
+    responsive: ["sm"],
   },
   {
     title: "Role",
@@ -112,6 +52,7 @@ const columns: TableColumnsType<DataType> = [
       localStorage.getItem("default-filters") || "[]"
     ),
     onFilter: (value, record) => record.role.indexOf(value as string) === 0,
+    responsive: ["sm"],
   },
 ];
 
@@ -143,27 +84,10 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [data, setData] = useState([]);
 
-  const onSearch: SearchProps["onSearch"] = (value, _e, info) => {
-    // console.log(info?.source, value);
-    setQuery(value);
-  };
+  const onSearch: SearchProps["onSearch"] = (value) => setQuery(value);
 
   useEffect(() => {
-    let url = "https://dummyjson.com/users";
-
-    if (query) {
-      url = url + `/search?q=${query}`;
-    }
-
-    fetch(url)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        return response.json();
-      })
-      .then((json) => setData(json.users))
-      .catch((error) => console.log("Error:", error));
+    fetchUsers(query).then((users) => setData(users));
   }, [query]);
 
   return (
@@ -178,7 +102,6 @@ export default function App() {
         />
       </Space>
       <Table<DataType>
-        rowKey={(record) => record.id}
         columns={columns}
         expandable={{
           expandedRowRender: (record) => (
@@ -187,11 +110,11 @@ export default function App() {
           rowExpandable: (record) => record.firstName !== "Not Expandable",
         }}
         pagination={{
-          // pageSize: 10,
           defaultCurrent: JSON.parse(
             localStorage.getItem("current-page") || "1"
           ),
           showLessItems: true,
+          hideOnSinglePage: true,
         }}
         dataSource={data}
         onChange={onChange}
