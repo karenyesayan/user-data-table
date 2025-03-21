@@ -1,5 +1,5 @@
 export interface DataType {
-  id: React.Key;
+  id: number;
   firstName: string;
   lastName: string;
   maidenName: string;
@@ -67,4 +67,11 @@ export interface DataType {
     network: string;
   };
   role: string;
+}
+
+export interface UsersState {
+  users: DataType[];
+  total: number;
+  loading: boolean;
+  errorMessage: null | string;
 }
