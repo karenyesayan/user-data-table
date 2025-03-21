@@ -13,7 +13,7 @@ const fetchUsersPending = (state: UsersState) => {
   state.loading = true;
 };
 
-const fetchUsersFulfilled = (state: UsersState, { payload }) => {
+const fetchUsersFulfilled = (state: UsersState, { payload }: any) => {
   state.loading = false;
   (state.total = payload.total), (state.users = payload.users);
 };
