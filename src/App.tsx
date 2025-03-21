@@ -85,6 +85,7 @@ export default function App() {
     sorter,
     extra
   ) => {
+    console.log(sorter);
     const { role } = filters;
     const { current = 1 } = pagination;
     const calcOffset = (current - 1) * 10;
