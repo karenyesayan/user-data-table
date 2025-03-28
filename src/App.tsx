@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { Table, Input, Space } from "antd";
-import UserTableRow from "./components/UserTableRow";
 import { fetchUsers } from "./redux/thunks/usersThunk";
 import {
   usersSelector,
   usersTotalSelector,
   usersLoadingSelector,
 } from "./redux/slices/usersSlice";
+import { Table, Input, Space } from "antd";
+import UserTableRow from "./components/UserTableRow";
 import { useAppDispatch } from "./hooks/useAppDispatch";
 import type { TableColumnsType, TableProps, GetProps } from "antd";
 import type { DataType } from "./lib/definitions";
@@ -16,10 +16,6 @@ import "./App.css";
 type SearchProps = GetProps<typeof Input.Search>;
 
 const { Search } = Input;
-
-const filter: string[] = JSON.parse(
-  localStorage.getItem("default-filters") || "[]"
-);
 
 const columns: TableColumnsType<DataType> = [
   {
@@ -61,72 +57,47 @@ const columns: TableColumnsType<DataType> = [
       },
     ],
     filterMultiple: false,
-    defaultFilteredValue: filter,
+    defaultFilteredValue: JSON.parse(
+      localStorage.getItem("default-filters") || "[]"
+    ),
   },
 ];
+
+const getQueryParams = () => {
+  const queryParams = localStorage.getItem("query-params");
+  return queryParams && !queryParams.startsWith("/search")
+    ? queryParams
+    : "?limit=10&skip=0";
+};
 
 export default function App() {
   const dispatch = useAppDispatch();
   const users = useSelector(usersSelector);
   const total = useSelector(usersTotalSelector);
   const loading = useSelector(usersLoadingSelector);
-
-  const [query, setQuery] = useState(() =>
-    filter[0]
-      ? `/filter?key=role&value=${filter[0]}&limit=10&skip=0`
-      : `?limit=10&skip=${
-          (JSON.parse(localStorage.getItem("current-page") || "1") - 1) * 10
-        }`
-  );
+  const [query, setQuery] = useState(() => getQueryParams());
 
   const onChange: TableProps<DataType>["onChange"] = (
-    pagination,
-    filters,
-    sorter,
-    extra
+    { current = 1 },
+    { role },
+    _sorter,
+    { action }
   ) => {
-    console.log(sorter);
-    const { role } = filters;
-    const { current = 1 } = pagination;
-    const calcOffset = (current - 1) * 10;
+    const skip = (current - 1) * 10;
+    let params;
 
-    switch (extra.action) {
-      case query.startsWith("/search") && "paginate": {
-        localStorage.setItem("current-page", JSON.stringify(current));
-        return setQuery((q) => q.replace(/(skip)=\d+/, `skip=${calcOffset}`));
-      }
-      case role?.length && role && "paginate": {
-        localStorage.setItem("current-page", JSON.stringify(current));
-        return setQuery(
-          `/filter?key=role&value=${
-            role && role[0]
-          }&limit=10&skip=${calcOffset}`
-        );
-      }
-      case "paginate": {
-        localStorage.setItem("current-page", JSON.stringify(current));
-        return setQuery(`?limit=10&skip=${calcOffset}`);
-      }
-      case role !== null && "filter": {
-        localStorage.setItem(
-          "default-filters",
-          JSON.stringify(filters.role || [])
-        );
-        return setQuery(
-          `/filter?key=role&value=${
-            role && role[0]
-          }&limit=10&skip=${calcOffset}`
-        );
-      }
-      case "filter": {
-        localStorage.setItem(
-          "default-filters",
-          JSON.stringify(filters.role || [])
-        );
-        localStorage.setItem("current-page", JSON.stringify(1));
-        return setQuery(`?limit=10&skip=${calcOffset}`);
-      }
+    if (action === "filter") {
+      params = `${
+        role && role[0] ? `/filter?key=role&value=${role[0]}&` : "?"
+      }limit=10&skip=${role && role[0] ? skip : 0}`;
+      localStorage.setItem("default-filters", JSON.stringify(role || []));
+    } else {
+      params = query.replace(/(skip)=\d+/, `skip=${skip}`);
     }
+
+    setQuery(params);
+    localStorage.setItem("query-params", params);
+    localStorage.setItem("current-page", JSON.stringify(current));
   };
 
   const onSearch: SearchProps["onSearch"] = (value) => {
@@ -157,7 +128,7 @@ export default function App() {
         columns={columns}
         rowKey={(record) => record.id}
         expandable={{
-          expandedRowRender: (record) => <UserTableRow id={record.id} />,
+          expandedRowRender: (record) => <UserTableRow {...record} />,
           rowExpandable: (record) => record.firstName !== "Not Expandable",
         }}
         pagination={{
